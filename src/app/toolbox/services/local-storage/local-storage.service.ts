@@ -19,13 +19,23 @@ export class LocalStorage {
         return false;
     }
 
-    public load(param: string): any {
+    public load<T>(param: string): T {
         if (this.localStorageEnabled) {
             const result = localStorage.getItem(param);
             if (result) {
                 return JSON.parse(result);
             }
             return null;
+        }
+    }
+
+    public loadArray<T>(param: string): Array<T> {
+        if (this.localStorageEnabled) {
+            const result = localStorage.getItem(param);
+            if (result) {
+                return JSON.parse(result);
+            }
+            return [];
         }
     }
 

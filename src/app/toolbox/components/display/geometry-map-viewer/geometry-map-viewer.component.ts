@@ -18,6 +18,9 @@ export class GeometryMapViewerComponent implements AfterViewInit, OnChanges {
     public geometry: GeoJSON.GeometryObject;
 
     @Input()
+    public zoomTo: GeoJSON.GeometryObject;
+
+    @Input()
     public maxMapZoom: number;
 
     private map: L.Map;
@@ -49,7 +52,7 @@ export class GeometryMapViewerComponent implements AfterViewInit, OnChanges {
 
         this.drawGeometry();
 
-        window.setTimeout(()=>this.map.invalidateSize(), 1000)
+        window.setTimeout(() => this.map.invalidateSize(), 10);
     }
 
     public ngOnChanges(changes: SimpleChanges) {
@@ -60,7 +63,15 @@ export class GeometryMapViewerComponent implements AfterViewInit, OnChanges {
             if (changes.geometry) {
                 this.drawGeometry();
             }
+            if (changes.zoomTo) {
+                this.zoomToGeometry();
+            }
         }
+    }
+
+    private zoomToGeometry() {
+        const geometry = L.geoJSON(this.zoomTo);
+        this.map.fitBounds(geometry.getBounds());
     }
 
     private showHighlight() {

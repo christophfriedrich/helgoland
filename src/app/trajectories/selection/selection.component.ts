@@ -92,15 +92,15 @@ export class TrajectoriesSelectionComponent implements OnInit {
 
   public datasetSelected(dataset: Array<Dataset>) {
     if (dataset instanceof Array && dataset.length === 1) {
-      this.trajectory.setTrajectory(dataset[0].id, dataset[0].url);
+      this.trajectory.addDataset(dataset[0].internalId);
       this.router.navigate(['trajectories/view']);
     }
   }
 
   private createFilter(): ParameterFilter {
     return {
-      valueTypes: ValueTypes[ValueTypes.quantity],
-      platformTypes: PlatformTypes[PlatformTypes.mobile]
+      valueTypes: ValueTypes.quantityProfile,
+      platformTypes: PlatformTypes.mobile
     };
   }
 

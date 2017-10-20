@@ -1,67 +1,35 @@
 import { Injectable } from '@angular/core';
-import { deserialize } from 'class-transformer';
 
-import { LocatedTimeValueEntry } from './../../toolbox/model/api/data';
-import { Dataset } from './../../toolbox/model/api/dataset/dataset';
-import { Timespan } from './../../toolbox/model/internal/timespan';
-import { ApiInterface } from './../../toolbox/services/api-interface/api-interface.service';
+import { DatasetService } from '../../toolbox/services/dataset/dataset.service';
+import { DatasetOptions } from './../../toolbox/model/api/dataset/options';
+import { ColorService } from './../../toolbox/services/color/color.service';
 import { LocalStorage } from './../../toolbox/services/local-storage/local-storage.service';
-import { TrajectoryModel } from './../model/trajectory-model';
 
-const TRAJECTORY_CACHE_PARAM = 'trajectory';
+const TRAJECTORY_IDS_PARAM = 'trajectory-ids';
+const TRAJECTORY_OPTIONS_PARAM = 'trajectory-options';
 
 @Injectable()
-export class TrajectoriesService {
-
-    public model: TrajectoryModel;
+export class TrajectoriesService extends DatasetService<DatasetOptions> {
 
     constructor(
-        private api: ApiInterface,
-        private localStorage: LocalStorage
+        protected localStorage: LocalStorage,
+        private color: ColorService
     ) {
-        this.model = {};
-        this.loadTrajectory();
+        super(localStorage);
+        this.loadState();
     }
 
-    public setTrajectory(id: string, url: string) {
-        this.api.getDataset(id, url).subscribe((res) => {
-            this.model.trajectory = res;
-            this.saveTrajectory();
-            const timespan = new Timespan(
-                new Date(this.model.trajectory.firstValue.timestamp),
-                new Date(this.model.trajectory.lastValue.timestamp)
-            );
-            this.api.getData<LocatedTimeValueEntry>(this.model.trajectory.id, this.model.trajectory.url, timespan)
-                .subscribe((data) => {
-                    this.model.data = data.values;
-                    this.model.geometry = {
-                        type: 'LineString',
-                        coordinates: []
-                    };
-                    this.model.data.forEach((entry) => {
-                        this.model.geometry.coordinates.push(entry.geometry.coordinates);
-                    });
-                });
-        });
+    protected createStyles(internalId: string): DatasetOptions {
+        return new DatasetOptions(internalId, this.color.getColor());
     }
 
-    public getPointForIdx(idx: number): GeoJSON.Point {
-        return this.model.data[idx].geometry;
+    protected saveState() {
+        this.localStorage.save(TRAJECTORY_IDS_PARAM, this.datasetIds);
+        this.localStorage.save(TRAJECTORY_OPTIONS_PARAM, Array.from(this.datasetOptions.values()));
     }
 
-    public hasTrajectory(): boolean {
-        return this.model.trajectory !== null && this.model.data !== null;
-    }
-
-    private saveTrajectory() {
-        this.localStorage.save(TRAJECTORY_CACHE_PARAM, this.model.trajectory);
-    }
-
-    private loadTrajectory() {
-        const json = this.localStorage.loadTextual(TRAJECTORY_CACHE_PARAM);
-        if (json) {
-            const result = deserialize<Dataset>(Dataset, json);
-            this.setTrajectory(result.id, result.url);
-        }
+    protected loadState() {
+        this.datasetIds = this.localStorage.loadArray<string>(TRAJECTORY_IDS_PARAM);
+        this.localStorage.loadArray<DatasetOptions>(TRAJECTORY_OPTIONS_PARAM).forEach(e => this.datasetOptions.set(e.internalId, e));
     }
 }
